@@ -48,11 +48,10 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:25.1.1'
 
-    compile "io.scanbot:sdk-package-2:0.0.0-DAGGER"
+    compile "io.scanbot:sdk-package-2:0.0.0-DAGGER-SNAPSHOT"
 
     // Dagger
     apt "com.google.dagger:dagger-compiler:2.9"
     apt "com.google.guava:guava:20.0-rc1"
-    provided 'javax.annotation:jsr250-api:1.0'
     compile "com.google.dagger:dagger:2.9"
 }
