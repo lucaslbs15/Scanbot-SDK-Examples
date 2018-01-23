@@ -25,7 +25,9 @@ import net.doo.snap.ui.PolygonView;
 public class CameraDialogFragment extends DialogFragment implements PictureCallback {
     private ScanbotCameraView cameraView;
     private ImageView resultView;
-
+    private ImageView fullResultView;
+    private byte[] image;
+    private int imageOrientation;
     boolean flashEnabled = false;
 
     /**
@@ -43,7 +45,7 @@ public class CameraDialogFragment extends DialogFragment implements PictureCallb
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View baseView =  getActivity().getLayoutInflater().inflate(R.layout.scanbot_camera_view, container, false);
+        View baseView = getActivity().getLayoutInflater().inflate(R.layout.scanbot_camera_view, container, false);
 
         cameraView = (ScanbotCameraView) baseView.findViewById(R.id.camera);
         cameraView.setCameraOpenCallback(new CameraOpenCallback() {
@@ -60,6 +62,9 @@ public class CameraDialogFragment extends DialogFragment implements PictureCallb
         });
 
         resultView = (ImageView) baseView.findViewById(R.id.result);
+        initResultViewClick();
+
+        fullResultView = (ImageView) baseView.findViewById(R.id.full_result);
 
         ContourDetectorFrameHandler contourDetectorFrameHandler = ContourDetectorFrameHandler.attach(cameraView);
 
@@ -89,9 +94,22 @@ public class CameraDialogFragment extends DialogFragment implements PictureCallb
         return baseView;
     }
 
+    private void initResultViewClick() {
+        resultView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (fullResultView.getVisibility() == View.GONE) {
+                    fullResultView.setVisibility(View.VISIBLE);
+                    fullResultView.setImageBitmap(getBitmap(image, imageOrientation));
+                } else {
+                    fullResultView.setVisibility(View.GONE);
+                }
+            }
+        });
+    }
+
     @Override
-    public void onStart()
-    {
+    public void onStart() {
         super.onStart();
         Dialog dialog = getDialog();
         if (dialog != null) {
@@ -115,13 +133,29 @@ public class CameraDialogFragment extends DialogFragment implements PictureCallb
 
     @Override
     public void onPictureTaken(final byte[] image, int imageOrientation) {
+        this.image = image;
+        this.imageOrientation = imageOrientation;
+
+        final Bitmap documentImage = getBitmap(image, imageOrientation);
+
+        resultView.post(new Runnable() {
+            @Override
+            public void run() {
+                resultView.setImageBitmap(documentImage);
+                cameraView.continuousFocus();
+                cameraView.startPreview();
+            }
+        });
+    }
+
+    private Bitmap getBitmap(final byte[] image, int imageOrientation) {
         // Here we get the full image from the camera.
         // Implement a suitable async(!) detection and image handling here.
         // This is just a demo showing detected image as downscaled preview image.
 
         // Decode Bitmap from bytes of original image:
         final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = 8; // use 1 for original size (if you want no downscale)!
+        options.inSampleSize = 1; // use 1 for original size (if you want no downscale)!
         // in this demo we downscale the image to 1/8 for the preview.
         Bitmap originalBitmap = BitmapFactory.decodeByteArray(image, 0, image.length, options);
 
@@ -135,16 +169,7 @@ public class CameraDialogFragment extends DialogFragment implements PictureCallb
         // Run document detection on original image:
         final ContourDetector detector = new ContourDetector();
         detector.detect(originalBitmap);
-        final Bitmap documentImage = detector.processImageAndRelease(originalBitmap, detector.getPolygonF(), ContourDetector.IMAGE_FILTER_NONE);
-
-        resultView.post(new Runnable() {
-            @Override
-            public void run() {
-                resultView.setImageBitmap(documentImage);
-                cameraView.continuousFocus();
-                cameraView.startPreview();
-            }
-        });
+        return detector.processImageAndRelease(originalBitmap, detector.getPolygonF(), ContourDetector.IMAGE_FILTER_NONE);
     }
 }
 
