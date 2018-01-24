@@ -65,7 +65,6 @@ public class CameraDialogFragment extends DialogFragment implements PictureCallb
         initResultViewClick();
 
         fullResultView = (ImageView) baseView.findViewById(R.id.full_result);
-
         ContourDetectorFrameHandler contourDetectorFrameHandler = ContourDetectorFrameHandler.attach(cameraView);
 
         PolygonView polygonView = (PolygonView) baseView.findViewById(R.id.polygonView);
